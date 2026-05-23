@@ -248,6 +248,34 @@ body::before {
 .greeting-sub span { display: inline-flex; align-items: center; gap: 8px; }
 .greeting-sub .dot { width: 4px; height: 4px; background: var(--rule); border-radius: 50%; }
 
+.greeting-dateline {
+  margin-top: 14px;
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.greeting-dateline #greeting-date {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.greeting-dateline .dateline-sep {
+  color: var(--rule);
+  font-family: var(--font-mono);
+}
+.greeting-dateline #greeting-date-fi {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 18px;
+  color: var(--teal);
+  font-variation-settings: 'opsz' 24;
+  letter-spacing: -0.005em;
+}
+
 .greeting-aside {
   text-align: right;
   font-family: var(--font-mono);
@@ -926,8 +954,11 @@ footer a:hover { color: var(--ink); border-color: var(--ink); }
           <span id="greeting-en">Good morning.</span>
           <span class="dot"></span>
           <span id="greeting-loc">Espoo</span>
-          <span class="dot"></span>
-          <span id="greeting-date">Friday, 15 May</span>
+        </div>
+        <div class="greeting-dateline">
+          <span id="greeting-date" lang="en">Saturday, 23 May 2026</span>
+          <span class="dateline-sep">·</span>
+          <span id="greeting-date-fi" lang="fi">lauantai, 23. toukokuuta 2026</span>
         </div>
       </div>
       <div class="greeting-aside">
@@ -1028,8 +1059,8 @@ footer a:hover { color: var(--ink); border-color: var(--ink); }
   <!-- ── DEADLINES ─────────────────────────────────────────────── -->
   <section class="page" id="page-deadlines">
     <div class="section-head">
-      <h2>Deadlines &amp; Expiries</h2>
-      <span class="meta">A missed renewal is a six-figure problem</span>
+      <h2>Deadlines &amp; Events</h2>
+      <span class="meta">Renewals · events · expiries — anything time-bound</span>
     </div>
     <div class="toolbar">
       <button class="btn primary" onclick="openModal('deadline')">+ New item</button>
@@ -1043,7 +1074,7 @@ footer a:hover { color: var(--ink); border-color: var(--ink); }
           <th>Item</th>
           <th class="col-mobile-hide" style="width: 140px;">Category</th>
           <th class="col-mobile-hide" style="width: 80px;">Country</th>
-          <th style="width: 120px;">Expires</th>
+          <th style="width: 160px;">When</th>
           <th style="width: 100px;">Days left</th>
           <th class="col-action" style="width: 80px;"></th>
         </tr>
@@ -1460,10 +1491,26 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+// Finnish day & month names (partitive for date display)
+const FI_DAYS = ['sunnuntai', 'maanantai', 'tiistai', 'keskiviikko', 'torstai', 'perjantai', 'lauantai'];
+const FI_MONTHS = ['tammikuuta', 'helmikuuta', 'maaliskuuta', 'huhtikuuta', 'toukokuuta', 'kesäkuuta', 'heinäkuuta', 'elokuuta', 'syyskuuta', 'lokakuuta', 'marraskuuta', 'joulukuuta'];
+
 function formatDateLong() {
   const d = new Date();
-  return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const weekday = d.toLocaleDateString('en-GB', { weekday: 'long' });
+  const day = d.getDate();
+  const month = d.toLocaleDateString('en-GB', { month: 'long' });
+  const year = d.getFullYear();
+  return `${weekday}, ${day} ${month} ${year}`;
 }
+
+function formatDateLongFI() {
+  const d = new Date();
+  return `${FI_DAYS[d.getDay()]}, ${d.getDate()}. ${FI_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// Capitalise first letter (for headline display of Finnish day name)
+function capFirst(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
 function weekNumber() {
   const d = new Date();
@@ -1548,6 +1595,7 @@ function renderToday() {
   document.getElementById('greeting-en').textContent = greetings.en[tod] + '.';
   document.getElementById('greeting-loc').textContent = data.meta.location || '';
   document.getElementById('greeting-date').textContent = formatDateLong();
+  document.getElementById('greeting-date-fi').textContent = formatDateLongFI();
   document.getElementById('week-num').textContent = 'W' + weekNumber();
   document.getElementById('today-date').textContent = formatDateLong();
   document.getElementById('issue-num').textContent = String(weekNumber()).padStart(3, '0');
@@ -1628,8 +1676,11 @@ function toggleThreeThing(i) {
 function renderExpiryToday() {
   const wrap = document.getElementById('expiry-list-today');
   const upcoming = data.deadlines
-    .map(d => ({ ...d, days: daysBetween(d.expiry) }))
-    .filter(d => d.days !== null && d.days <= 90 && d.days >= -7)
+    .map(d => {
+      const triggerDate = d.startDate || d.expiry;
+      return { ...d, days: daysBetween(triggerDate) };
+    })
+    .filter(d => d.days !== null && d.days >= 0 && d.days <= 90)
     .sort((a, b) => a.days - b.days)
     .slice(0, 5);
 
@@ -1638,13 +1689,43 @@ function renderExpiryToday() {
     return;
   }
   wrap.innerHTML = upcoming.map(d => {
-    const cls = d.days < 0 ? 'days-exp' : d.days <= 30 ? 'days-crit' : d.days <= 60 ? 'days-warn' : 'days-watch';
-    const lbl = d.days < 0 ? 'Expired' : d.days + 'd';
+    const cls = d.days <= 30 ? 'days-crit' : d.days <= 60 ? 'days-warn' : 'days-watch';
+    const lbl = d.days === 0 ? 'Today' : d.days === 1 ? 'Tomorrow' : d.days + 'd';
+    const whenLine = formatEventDateline(d);
     return `<div class="expiry-row">
-      <div><div class="expiry-name">${escapeHtml(d.item)}</div><div class="expiry-cat">${escapeHtml(d.category || '')} · ${escapeHtml(d.country || '')}</div></div>
+      <div>
+        <div class="expiry-name">${escapeHtml(d.item)}</div>
+        <div class="expiry-cat">${escapeHtml(d.category || '')} · ${escapeHtml(d.country || '')}${whenLine ? ' · ' + whenLine : ''}</div>
+      </div>
       <div class="expiry-days ${cls}">${lbl}</div>
     </div>`;
   }).join('');
+}
+
+// Compact dateline for an event/deadline (shows times when present, range when start≠end)
+function formatEventDateline(d) {
+  if (!d.expiry && !d.startDate) return '';
+  const start = d.startDate;
+  const end = d.expiry;
+  const sT = d.startTime;
+  const eT = d.endTime;
+
+  // Same-day event with at least one time
+  if (start && end && start === end && (sT || eT)) {
+    const times = [sT, eT].filter(Boolean).join('–');
+    return times;
+  }
+  // Multi-day range
+  if (start && end && start !== end) {
+    const sLbl = formatDate(start) + (sT ? ' ' + sT : '');
+    const eLbl = formatDate(end) + (eT ? ' ' + eT : '');
+    return sLbl + ' → ' + eLbl;
+  }
+  // Just end date with times
+  if (end && (sT || eT)) {
+    return [sT, eT].filter(Boolean).join('–');
+  }
+  return '';
 }
 
 function renderTodayMetrics() {
@@ -1796,7 +1877,10 @@ function editTask(id) { openModal('task', id); }
 // ── DEADLINES ───────────────────────────────────────────────────────
 function renderDeadlines() {
   const items = [...data.deadlines]
-    .map(d => ({ ...d, days: daysBetween(d.expiry) }))
+    .map(d => {
+      const triggerDate = d.startDate || d.expiry;
+      return { ...d, days: daysBetween(triggerDate) };
+    })
     .sort((a, b) => (a.days ?? 99999) - (b.days ?? 99999));
   document.getElementById('deadline-count').textContent = `${items.length} tracked`;
   const tbody = document.getElementById('deadlines-tbody');
@@ -1810,19 +1894,52 @@ function renderDeadlines() {
     let cls, lbl;
     if (d.days === null) { cls = ''; lbl = '—'; }
     else if (d.days < 0) { cls = 'days-exp'; lbl = 'Expired ' + Math.abs(d.days) + 'd ago'; }
+    else if (d.days === 0) { cls = 'days-crit'; lbl = 'Today'; }
+    else if (d.days === 1) { cls = 'days-crit'; lbl = 'Tomorrow'; }
     else if (d.days <= 30) { cls = 'days-crit'; lbl = d.days + ' days'; }
     else if (d.days <= 90) { cls = 'days-warn'; lbl = d.days + ' days'; }
     else if (d.days <= 180) { cls = 'days-watch'; lbl = d.days + ' days'; }
     else { cls = 'days-ok'; lbl = Math.round(d.days / 30) + ' months'; }
+
+    // Build the "When" cell — date range + times
+    const whenCell = formatDeadlineWhen(d);
+
     return `<tr>
       <td><strong>${escapeHtml(d.item)}</strong>${d.notes ? `<div style="color:var(--ink-mute);font-size:12px;margin-top:4px;">${escapeHtml(d.notes)}</div>` : ''}</td>
       <td class="col-mobile-hide"><span style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);letter-spacing:0.05em;">${escapeHtml(d.category || '—')}</span></td>
       <td class="col-mobile-hide"><span class="pill">${escapeHtml(d.country || '—')}</span></td>
-      <td>${formatDate(d.expiry)}</td>
+      <td>${whenCell}</td>
       <td><span class="expiry-days ${cls}">${lbl}</span></td>
       <td class="col-action"><button class="btn" onclick="editDeadline('${d.id}')">Edit</button></td>
     </tr>`;
   }).join('');
+}
+
+// Full "When" display for the deadlines table — multi-line if needed
+function formatDeadlineWhen(d) {
+  const start = d.startDate;
+  const end = d.expiry;
+  const sT = d.startTime;
+  const eT = d.endTime;
+
+  if (!start && !end) return '—';
+
+  // Same day event with times
+  if (start && end && start === end) {
+    const times = [sT, eT].filter(Boolean).join('–');
+    return `${formatDate(end)}${times ? `<div style="color:var(--ink-mute);font-size:12px;margin-top:3px;font-family:var(--font-mono);">${times}</div>` : ''}`;
+  }
+  // Multi-day range
+  if (start && end && start !== end) {
+    return `<div>${formatDate(start)}${sT ? ` <span style="color:var(--ink-mute);font-family:var(--font-mono);font-size:11px;">${sT}</span>` : ''}</div>
+            <div style="color:var(--ink-mute);font-size:11px;font-family:var(--font-mono);">→ ${formatDate(end)}${eT ? ' ' + eT : ''}</div>`;
+  }
+  // Just end date with times
+  if (end) {
+    const times = [sT, eT].filter(Boolean).join('–');
+    return `${formatDate(end)}${times ? `<div style="color:var(--ink-mute);font-size:12px;margin-top:3px;font-family:var(--font-mono);">${times}</div>` : ''}`;
+  }
+  return '—';
 }
 
 function editDeadline(id) { openModal('deadline', id); }
@@ -2300,12 +2417,12 @@ function openModal(type, id) {
       <div class="form-row"><label>Notes</label><textarea id="f-notes">${escapeAttr(item.notes || '')}</textarea></div>
     `,
     deadline: () => `
-      <h3>${id ? 'Edit' : 'New'} Deadline</h3>
+      <h3>${id ? 'Edit' : 'New'} Deadline / Event</h3>
       <div class="form-row"><label>Item</label><input type="text" id="f-item" value="${escapeAttr(item.item || '')}" autofocus></div>
       <div class="form-row-grid">
         <div class="form-row"><label>Category</label>
           <select id="f-category">
-            ${['Identity', 'Insurance', 'Subscription', 'Tax', 'Certification', 'Bill', 'Loan', 'Other'].map(c => `<option ${item.category === c ? 'selected' : ''}>${c}</option>`).join('')}
+            ${['Identity', 'Insurance', 'Subscription', 'Tax', 'Certification', 'Bill', 'Loan', 'Event', 'Other'].map(c => `<option ${item.category === c ? 'selected' : ''}>${c}</option>`).join('')}
           </select>
         </div>
         <div class="form-row"><label>Country</label>
@@ -2315,9 +2432,14 @@ function openModal(type, id) {
         </div>
       </div>
       <div class="form-row-grid">
-        <div class="form-row"><label>Expiry date</label><input type="date" id="f-expiry" value="${item.expiry || ''}"></div>
-        <div class="form-row"><label>Lead time (months)</label><input type="number" id="f-lead" value="${item.leadMonths || ''}" placeholder="e.g. 4"></div>
+        <div class="form-row"><label>From date <span style="text-transform:none;letter-spacing:0;color:var(--ink-mute);">(optional)</span></label><input type="date" id="f-startdate" value="${item.startDate || ''}"></div>
+        <div class="form-row"><label>From time <span style="text-transform:none;letter-spacing:0;color:var(--ink-mute);">(optional)</span></label><input type="time" id="f-starttime" value="${item.startTime || ''}"></div>
       </div>
+      <div class="form-row-grid">
+        <div class="form-row"><label>To date / expiry</label><input type="date" id="f-expiry" value="${item.expiry || ''}"></div>
+        <div class="form-row"><label>To time <span style="text-transform:none;letter-spacing:0;color:var(--ink-mute);">(optional)</span></label><input type="time" id="f-endtime" value="${item.endTime || ''}"></div>
+      </div>
+      <div class="form-row"><label>Lead time (months) <span style="text-transform:none;letter-spacing:0;color:var(--ink-mute);">— for renewals only</span></label><input type="number" id="f-lead" value="${item.leadMonths || ''}" placeholder="e.g. 4"></div>
       <div class="form-row"><label>Notes</label><textarea id="f-notes">${escapeAttr(item.notes || '')}</textarea></div>
     `,
     money: () => `
@@ -2464,10 +2586,16 @@ function saveItem(type, id) {
     item.item = get('f-item').trim();
     item.category = get('f-category');
     item.country = get('f-country');
+    item.startDate = get('f-startdate') || null;
+    item.startTime = get('f-starttime') || null;
     item.expiry = get('f-expiry') || null;
+    item.endTime = get('f-endtime') || null;
     item.leadMonths = parseInt(get('f-lead')) || null;
     item.notes = get('f-notes');
     if (!item.item) { toast('Item required'); return; }
+    if (!item.expiry && !item.startDate) { toast('At least one date is required'); return; }
+    // If only startDate is set, mirror to expiry so day-counting works
+    if (item.startDate && !item.expiry) item.expiry = item.startDate;
   } else if (type === 'money') {
     item.date = get('f-date');
     item.assets = parseFloat(get('f-assets')) || 0;
