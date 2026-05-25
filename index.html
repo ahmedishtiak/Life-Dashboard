@@ -1221,19 +1221,7 @@ footer a:hover { color: var(--ink); border-color: var(--ink); }
         <span class="meta" id="deadline-count">—</span>
       </div>
     </div>
-    <table class="table" id="deadlines-table">
-      <thead>
-        <tr>
-          <th>Item</th>
-          <th class="col-mobile-hide" style="width: 140px;">Category</th>
-          <th class="col-mobile-hide" style="width: 80px;">Country</th>
-          <th style="width: 160px;">When</th>
-          <th style="width: 100px;">Days left</th>
-          <th class="col-action" style="width: 80px;"></th>
-        </tr>
-      </thead>
-      <tbody id="deadlines-tbody"></tbody>
-    </table>
+    <div id="deadlines-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
   </section>
 
   <!-- ── MONEY ─────────────────────────────────────────────────── -->
@@ -2031,39 +2019,92 @@ function renderDeadlines() {
     })
     .sort((a, b) => (a.days ?? 99999) - (b.days ?? 99999));
   document.getElementById('deadline-count').textContent = `${items.length} tracked`;
-  const tbody = document.getElementById('deadlines-tbody');
+  const wrap = document.getElementById('deadlines-list');
 
   if (items.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><h4>No deadlines tracked</h4><p>Start with your residence permit, passport, and health insurance. Missing one is a six-figure problem.</p></div></td></tr>`;
+    wrap.innerHTML = `<div class="empty"><h4>No deadlines tracked</h4><p>Start with your residence permit, passport, and health insurance. Missing one is a six-figure problem.</p></div>`;
     return;
   }
 
-  tbody.innerHTML = items.map(d => {
-    let cls, lbl;
-    if (d.days === null) { cls = ''; lbl = '—'; }
-    else if (d.days < 0) { cls = 'days-exp'; lbl = 'Expired ' + Math.abs(d.days) + 'd ago'; }
-    else if (d.days === 0) { cls = 'days-crit'; lbl = 'Today'; }
-    else if (d.days === 1) { cls = 'days-crit'; lbl = 'Tomorrow'; }
-    else if (d.days <= 30) { cls = 'days-crit'; lbl = d.days + ' days'; }
-    else if (d.days <= 90) { cls = 'days-warn'; lbl = d.days + ' days'; }
-    else if (d.days <= 180) { cls = 'days-watch'; lbl = d.days + ' days'; }
-    else { cls = 'days-ok'; lbl = Math.round(d.days / 30) + ' months'; }
+  wrap.innerHTML = items.map(d => {
+    // Compact badge label for the summary row
+    let cls = '', badgeLbl = '—';
+    if (d.days !== null) {
+      if (d.days < 0) { cls = 'days-exp'; badgeLbl = 'Expired'; }
+      else if (d.days === 0) { cls = 'days-crit'; badgeLbl = 'Today'; }
+      else if (d.days === 1) { cls = 'days-crit'; badgeLbl = 'Tomorrow'; }
+      else if (d.days <= 30) { cls = 'days-crit'; badgeLbl = d.days + 'd'; }
+      else if (d.days <= 90) { cls = 'days-warn'; badgeLbl = d.days + 'd'; }
+      else if (d.days <= 180) { cls = 'days-watch'; badgeLbl = d.days + 'd'; }
+      else if (d.days <= 365) { cls = 'days-watch'; badgeLbl = Math.round(d.days / 30) + 'mo'; }
+      else { cls = 'days-ok'; badgeLbl = (Math.round(d.days / 365 * 10) / 10) + 'y'; }
+    }
 
-    // Build the "When" cell — date range + times
-    const whenCell = formatDeadlineWhen(d);
+    // Build the expanded details block
+    const detailsRows = [];
+    const whenLine = formatDeadlineWhenInline(d);
+    if (whenLine) detailsRows.push(`<dt>When</dt><dd>${whenLine}</dd>`);
+    if (d.country) detailsRows.push(`<dt>Country</dt><dd>${escapeHtml(d.country)}</dd>`);
+    if (d.leadMonths) detailsRows.push(`<dt>Lead time</dt><dd>${d.leadMonths} month${d.leadMonths === 1 ? '' : 's'} before</dd>`);
+    if (d.days !== null && d.days < 0) detailsRows.push(`<dt>Status</dt><dd style="color:var(--rust);">Expired ${Math.abs(d.days)} days ago</dd>`);
+    const detailsHtml = detailsRows.length
+      ? `<dl class="vault-details">${detailsRows.join('')}</dl>`
+      : '';
 
-    return `<tr>
-      <td><strong>${escapeHtml(d.item)}</strong>${d.notes ? `<div style="color:var(--ink-mute);font-size:12px;margin-top:4px;">${escapeHtml(d.notes)}</div>` : ''}</td>
-      <td class="col-mobile-hide"><span style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);letter-spacing:0.05em;">${escapeHtml(d.category || '—')}</span></td>
-      <td class="col-mobile-hide"><span class="pill">${escapeHtml(d.country || '—')}</span></td>
-      <td>${whenCell}</td>
-      <td><span class="expiry-days ${cls}">${lbl}</span></td>
-      <td class="col-action"><button class="btn" onclick="editDeadline('${d.id}')">Edit</button></td>
-    </tr>`;
+    const notesHtml = d.notes
+      ? `<div class="note-content">${renderNoteContent(d.notes)}</div>`
+      : '';
+
+    return `
+      <details class="note-card">
+        <summary class="note-summary">
+          <div class="note-meta">
+            <span><span class="accent"></span>${escapeHtml(d.category || 'Other')}${d.country ? ' · ' + escapeHtml(d.country) : ''}</span>
+            <span class="expiry-days ${cls}">${badgeLbl}</span>
+          </div>
+          <h3 class="note-title">
+            <span class="note-chevron">›</span>
+            <span>${escapeHtml(d.item)}</span>
+          </h3>
+        </summary>
+        <div class="note-body">
+          ${detailsHtml}
+          ${notesHtml}
+          <div class="note-actions"><button class="btn" onclick="editDeadline('${d.id}')">Edit</button></div>
+        </div>
+      </details>
+    `;
   }).join('');
 }
 
-// Full "When" display for the deadlines table — multi-line if needed
+// Inline single-line "when" display for inside the expanded card details
+function formatDeadlineWhenInline(d) {
+  const start = d.startDate;
+  const end = d.expiry;
+  const sT = d.startTime;
+  const eT = d.endTime;
+  if (!start && !end) return '';
+
+  // Same-day event with times
+  if (start && end && start === end) {
+    const times = [sT, eT].filter(Boolean).join('–');
+    return formatDate(end) + (times ? ` <span style="color:var(--ink-mute);font-family:var(--font-mono);font-size:12px;">${times}</span>` : '');
+  }
+  // Multi-day range
+  if (start && end && start !== end) {
+    const sLbl = formatDate(start) + (sT ? ` <span style="color:var(--ink-mute);font-family:var(--font-mono);font-size:12px;">${sT}</span>` : '');
+    const eLbl = formatDate(end) + (eT ? ` <span style="color:var(--ink-mute);font-family:var(--font-mono);font-size:12px;">${eT}</span>` : '');
+    return `${sLbl} <span style="color:var(--ink-mute);">→</span> ${eLbl}`;
+  }
+  // Just end date with times
+  if (end) {
+    const times = [sT, eT].filter(Boolean).join('–');
+    return formatDate(end) + (times ? ` <span style="color:var(--ink-mute);font-family:var(--font-mono);font-size:12px;">${times}</span>` : '');
+  }
+  return '';
+}
+
+// Full "When" display for the deadlines table — multi-line if needed (kept for backward compat if referenced elsewhere)
 function formatDeadlineWhen(d) {
   const start = d.startDate;
   const end = d.expiry;
