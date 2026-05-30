@@ -109,11 +109,12 @@ body::before {
 .masthead-inner {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 18px 32px;
+  padding: 16px 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
+  flex-wrap: wrap;
 }
 
 .brand {
@@ -140,15 +141,38 @@ body::before {
   border-radius: 2px;
 }
 
-.issue-number {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  color: var(--ink-mute);
-  text-transform: uppercase;
+.masthead-meta {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 18px;
+}
+
+.masthead-dates {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  line-height: 1.2;
+  text-align: right;
+}
+
+#today-date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+#today-date-fi {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--teal);
+  font-variation-settings: 'opsz' 18;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
 }
 
 .theme-toggle, .nav-toggle {
@@ -205,96 +229,6 @@ body::before {
   max-width: 1280px;
   margin: 0 auto;
   padding: 40px 32px 100px;
-}
-
-/* ── Greeting / hero ────────────────────────────────────────────────── */
-.greeting {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 40px;
-  margin-bottom: 56px;
-  padding-bottom: 32px;
-  border-bottom: 1px solid var(--rule);
-}
-
-.greeting-main h1 {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(36px, 5vw, 56px);
-  line-height: 1.05;
-  letter-spacing: -0.025em;
-  color: var(--ink);
-  font-variation-settings: 'opsz' 144;
-}
-
-.greeting-main h1 em {
-  font-style: italic;
-  font-weight: 300;
-  color: var(--teal);
-}
-
-.greeting-sub {
-  margin-top: 14px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-mute);
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-
-.greeting-sub span { display: inline-flex; align-items: center; gap: 8px; }
-.greeting-sub .dot { width: 4px; height: 4px; background: var(--rule); border-radius: 50%; }
-
-.greeting-dateline {
-  margin-top: 14px;
-  display: flex;
-  gap: 16px;
-  align-items: baseline;
-  flex-wrap: wrap;
-}
-.greeting-dateline #greeting-date {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-}
-.greeting-dateline .dateline-sep {
-  color: var(--rule);
-  font-family: var(--font-mono);
-}
-.greeting-dateline #greeting-date-fi {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 400;
-  font-size: 18px;
-  color: var(--teal);
-  font-variation-settings: 'opsz' 24;
-  letter-spacing: -0.005em;
-}
-
-.greeting-aside {
-  text-align: right;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  color: var(--ink-mute);
-  align-self: end;
-}
-
-.greeting-aside .big {
-  font-family: var(--font-display);
-  font-size: 42px;
-  font-weight: 300;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-  display: block;
-  line-height: 1;
-  font-variation-settings: 'opsz' 144;
-  margin-bottom: 6px;
 }
 
 /* ── Quick capture ──────────────────────────────────────────────────── */
@@ -1125,11 +1059,22 @@ footer a:hover { color: var(--ink); border-color: var(--ink); }
 /* ── Responsive ─────────────────────────────────────────────────────── */
 @media (max-width: 880px) {
   .container { padding: 24px 18px 80px; }
-  .masthead-inner { padding: 14px 18px; }
+  .masthead-inner { padding: 12px 18px; gap: 12px; }
   .nav { padding: 10px 18px; }
-  .greeting { grid-template-columns: 1fr; gap: 18px; padding-bottom: 24px; margin-bottom: 32px; }
-  .greeting-aside { text-align: left; }
-  .greeting-main h1 { font-size: 34px; }
+  .brand { font-size: 22px; gap: 8px; }
+  .masthead-meta {
+    width: 100%;
+    justify-content: space-between;
+    border-top: 1px solid var(--rule-soft);
+    padding-top: 10px;
+    gap: 12px;
+  }
+  .masthead-dates {
+    align-items: flex-start;
+    text-align: left;
+  }
+  #today-date { font-size: 10px; }
+  #today-date-fi { font-size: 14px; }
   .grid-2, .grid-3, .grid-asym { grid-template-columns: 1fr; }
   .stats-strip { grid-template-columns: repeat(2, 1fr); }
   .stat-block:nth-child(2n) { border-right: 0; }
@@ -1139,7 +1084,6 @@ footer a:hover { color: var(--ink); border-color: var(--ink); }
   .table { font-size: 13px; }
   .table th, .table td { padding: 10px 6px; }
   .col-mobile-hide { display: none; }
-  .issue-number { display: none; }
   .heatmap { grid-template-columns: repeat(20, 1fr); }
 }
 
@@ -1160,10 +1104,13 @@ footer a:hover { color: var(--ink); border-color: var(--ink); }
   <div class="masthead-inner">
     <a href="#today" class="brand">
       Life OS
-      <span class="brand-mark">№ <span id="issue-num">001</span></span>
+      <span class="brand-mark" id="week-mark">W—</span>
     </a>
-    <div class="issue-number">
-      <span id="today-date">—</span>
+    <div class="masthead-meta">
+      <div class="masthead-dates">
+        <span id="today-date" lang="en">—</span>
+        <span id="today-date-fi" lang="fi">—</span>
+      </div>
       <button class="theme-toggle" id="theme-toggle">Theme</button>
     </div>
   </div>
@@ -1185,26 +1132,6 @@ footer a:hover { color: var(--ink); border-color: var(--ink); }
 
   <!-- ── TODAY ──────────────────────────────────────────────────── -->
   <section class="page active" id="page-today">
-    <div class="greeting">
-      <div class="greeting-main">
-        <h1 id="greeting-line"><em>Hyvää huomenta</em>, Ishtiak.</h1>
-        <div class="greeting-sub">
-          <span id="greeting-en">Good morning.</span>
-          <span class="dot"></span>
-          <span id="greeting-loc">Espoo</span>
-        </div>
-        <div class="greeting-dateline">
-          <span id="greeting-date" lang="en">Saturday, 23 May 2026</span>
-          <span class="dateline-sep">·</span>
-          <span id="greeting-date-fi" lang="fi">lauantai, 23. toukokuuta 2026</span>
-        </div>
-      </div>
-      <div class="greeting-aside">
-        <span class="big" id="week-num">W20</span>
-        Week of the year
-      </div>
-    </div>
-
     <div class="quick-capture">
       <span class="quick-capture-icon">✦</span>
       <input type="text" id="qcap-input" placeholder="Capture anything — press Enter to save as task" autocomplete="off">
@@ -1669,6 +1596,16 @@ function formatDateLongFI() {
 // Capitalise first letter (for headline display of Finnish day name)
 function capFirst(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
+// Update masthead with current dates and week number — called from route()
+function updateMasthead() {
+  const dEn = document.getElementById('today-date');
+  const dFi = document.getElementById('today-date-fi');
+  const wMark = document.getElementById('week-mark');
+  if (dEn) dEn.textContent = formatDateLong();
+  if (dFi) dFi.textContent = formatDateLongFI();
+  if (wMark) wMark.textContent = 'W' + weekNumber();
+}
+
 function weekNumber() {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
@@ -1680,22 +1617,6 @@ function weekNumber() {
 function fmtEUR(n) {
   if (n === null || n === undefined || isNaN(n)) return '—';
   return '€' + Number(n).toLocaleString('fi-FI', { maximumFractionDigits: 0 });
-}
-
-// ── Greetings ───────────────────────────────────────────────────────
-const greetings = {
-  fi: { morning: 'Hyvää huomenta', day: 'Hyvää päivää', evening: 'Hyvää iltaa', night: 'Hyvää yötä' },
-  en: { morning: 'Good morning', day: 'Good afternoon', evening: 'Good evening', night: 'Good night' },
-  bn: { morning: 'Shubho shokal', day: 'Shubho oporahno', evening: 'Shubho shondhya', night: 'Shubho ratri' }
-};
-
-function timeOfDay() {
-  const h = new Date().getHours();
-  if (h < 5) return 'night';
-  if (h < 12) return 'morning';
-  if (h < 17) return 'day';
-  if (h < 21) return 'evening';
-  return 'night';
 }
 
 const QUOTES = [
@@ -1732,6 +1653,7 @@ function route() {
   if (page) page.classList.add('active');
   if (link) link.classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  updateMasthead();
   renderCurrentView(hash);
 }
 
@@ -1752,17 +1674,6 @@ function renderCurrentView(hash) {
 
 // ── TODAY ───────────────────────────────────────────────────────────
 function renderToday() {
-  const tod = timeOfDay();
-  const name = data.meta.name || 'friend';
-  document.getElementById('greeting-line').innerHTML = `<em>${greetings.fi[tod]}</em>, ${name}.`;
-  document.getElementById('greeting-en').textContent = greetings.en[tod] + '.';
-  document.getElementById('greeting-loc').textContent = data.meta.location || '';
-  document.getElementById('greeting-date').textContent = formatDateLong();
-  document.getElementById('greeting-date-fi').textContent = formatDateLongFI();
-  document.getElementById('week-num').textContent = 'W' + weekNumber();
-  document.getElementById('today-date').textContent = formatDateLong();
-  document.getElementById('issue-num').textContent = String(weekNumber()).padStart(3, '0');
-
   // Quote
   const q = QUOTES[Math.floor(Math.random() * QUOTES.length)];
   document.getElementById('quote-text').textContent = q.text;
@@ -3251,11 +3162,13 @@ applyTheme();
 route();
 updateStorageStats();
 
-// Refresh today's date display once a minute (handles overnight)
+// Refresh masthead date display once a minute (handles overnight)
 setInterval(() => {
-  if (window.location.hash === '#today' || window.location.hash === '' || window.location.hash === '#') {
-    const newDate = formatDateLong();
-    if (document.getElementById('greeting-date').textContent !== newDate) {
+  const newDate = formatDateLong();
+  const td = document.getElementById('today-date');
+  if (td && td.textContent !== newDate) {
+    updateMasthead();
+    if (window.location.hash === '#today' || window.location.hash === '' || window.location.hash === '#') {
       renderToday();
     }
   }
